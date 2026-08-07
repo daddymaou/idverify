@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+export const API_URL = 'https://idverify-api.onrender.com' 
 
 export interface VerificationResult {
   id: string
@@ -21,7 +21,7 @@ export interface AgeGateResult {
 
 export async function verifyId(file: File): Promise<VerificationResult> {
   const formData = new FormData()
-  formData.append('idImage', file)  // ← FIXED: 'image' → 'idImage'
+  formData.append('idImage', file)
 
   const res = await fetch(`${API_URL}/api/verify`, {
     method: 'POST',
@@ -38,7 +38,7 @@ export async function verifyId(file: File): Promise<VerificationResult> {
 
 export async function checkAge(file: File): Promise<AgeGateResult> {
   const formData = new FormData()
-  formData.append('idImage', file)  // ← FIXED: 'image' → 'idImage'
+  formData.append('idImage', file)
 
   const res = await fetch(`${API_URL}/api/age-gate`, {
     method: 'POST',
