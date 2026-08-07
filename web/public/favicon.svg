@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Black square background -->
+  <rect width="32" height="32" fill="#000000"/>
+  <!-- White "ID" text -->
+  <text x="16" y="22" font-family="'Inter', 'Arial Black', sans-serif" font-size="14" font-weight="900" fill="#FFFFFF" text-anchor="middle" dominant-baseline="auto" letter-spacing="0">ID</text>
+  <!-- White checkmark tick at bottom right -->
+  <polyline points="18,25 21,28 27,20" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" fill="none"/>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" fill="none">
+  <!-- Black block with "ID" in white -->
+  <rect x="0" y="0" width="72" height="56" fill="#000000"/>
+  <text x="36" y="40" font-family="'Inter', 'Arial Black', sans-serif" font-size="30" font-weight="900" fill="#FFFFFF" text-anchor="middle" dominant-baseline="auto" letter-spacing="-1">ID</text>
+  <!-- Divider line -->
+  <rect x="78" y="4" width="3" height="48" fill="#000000"/>
+  <!-- "VERIFY" text in black -->
+  <text x="96" y="40" font-family="'Inter', 'Arial Black', sans-serif" font-size="24" font-weight="900" fill="#000000" text-anchor="start" dominant-baseline="auto" letter-spacing="2">VERIFY</text>
+  <!-- Checkmark dot under V -->
+  <rect x="96" y="48" width="4" height="4" fill="#000000"/>
+</svg>

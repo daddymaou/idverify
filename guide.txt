@@ -1,0 +1,292 @@
+================================================================================
+  IDVerify — Complete Setup & Deployment Guide
+  Built by ᗰᗩOᑌ (https://maou.name.ng)
+  GitHub: https://github.com/daddymaou/idverify
+================================================================================
+
+OVERVIEW
+--------
+IDVerify has two parts:
+  • web/   → React frontend (Vercel)
+  • api/   → Express backend (Render)
+
+They are separate deployments. The frontend talks to the backend via an
+environment variable (VITE_API_URL).
+
+The npm package (packages/idverify/) is optional — it lets you use the core
+logic directly in your own Node.js project.
+
+================================================================================
+  PART 1: LOCAL DEVELOPMENT
+================================================================================
+
+PREREQUISITES
+  • Node.js 18 or higher  →  https://nodejs.org
+  • npm (comes with Node.js)
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 1: Start the backend API
+────────────────────────────────────────────────────────────────────────────────
+
+  cd api
+  npm install
+  npm run dev
+
+  The API starts at: http://localhost:3001
+
+  Test it:
+    curl http://localhost:3001/api/health
+    → { "status": "ok" }
+
+  Note: The first "npm run dev" takes a little longer because sharp (image
+  processing) compiles a native binary. This is normal and only happens once.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 2: Start the frontend
+────────────────────────────────────────────────────────────────────────────────
+
+  cd web
+  npm install
+  cp .env.example .env.local
+
+  Open .env.local and set:
+    VITE_API_URL=http://localhost:3001
+
+  Then run:
+    npm run dev
+
+  The app opens at: http://localhost:5173
+
+  Pages:
+    /              → Upload page
+    /verify/:id    → Verification results
+    /docs          → API documentation
+
+────────────────────────────────────────────────────────────────────────────────
+FULL LOCAL WORKFLOW (run both terminals side by side)
+────────────────────────────────────────────────────────────────────────────────
+
+  Terminal 1:
+    cd idverify/api && npm install && npm run dev
+
+  Terminal 2:
+    cd idverify/web && npm install && npm run dev
+
+  Open: http://localhost:5173
+
+================================================================================
+  PART 2: DEPLOY BACKEND TO RENDER
+================================================================================
+
+Render hosts the Express API server. It's free to start.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 1: Push to GitHub
+────────────────────────────────────────────────────────────────────────────────
+
+  Push the entire idverify/ project to a GitHub repo.
+  Recommended: github.com/daddymaou/idverify
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 2: Create a new Web Service on Render
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Go to https://render.com and sign in
+  2. Click "New +" → "Web Service"
+  3. Connect your GitHub repo (github.com/daddymaou/idverify)
+  4. Configure the service:
+
+     Name:              idverify-api
+     Root Directory:    api
+     Environment:       Node
+     Build Command:     npm install && npm run build
+     Start Command:     npm start
+     Instance Type:     Free (or paid for better performance)
+
+  5. Add Environment Variables:
+     Key: PORT      Value: (leave blank — Render sets this automatically)
+
+  6. Click "Create Web Service"
+  7. Wait for the build to finish (~2-3 minutes)
+  8. Copy your service URL, e.g.:
+       https://idverify-api.onrender.com
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 3: Test the Render API
+────────────────────────────────────────────────────────────────────────────────
+
+  curl https://idverify-api.onrender.com/api/health
+  → { "status": "ok" }
+
+  Note: Free Render services "sleep" after 15 minutes of inactivity.
+  The first request after sleeping takes ~30 seconds to wake up.
+  Upgrade to a paid plan to prevent this.
+
+================================================================================
+  PART 3: DEPLOY FRONTEND TO VERCEL
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 1: Install Vercel CLI (optional but recommended)
+────────────────────────────────────────────────────────────────────────────────
+
+  npm install -g vercel
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 2: Set the API URL environment variable
+────────────────────────────────────────────────────────────────────────────────
+
+  You need the Render API URL from Part 2, Step 2 before deploying.
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 3a: Deploy via Vercel Dashboard (recommended for beginners)
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Go to https://vercel.com and sign in (use GitHub)
+  2. Click "Add New..." → "Project"
+  3. Import your GitHub repo
+  4. Configure:
+
+     Root Directory:    web
+     Framework Preset:  Vite (auto-detected)
+     Build Command:     npm run build
+     Output Directory:  dist
+
+  5. Add Environment Variable:
+     Name:   VITE_API_URL
+     Value:  https://idverify-api.onrender.com
+             (replace with your actual Render URL)
+
+  6. Click "Deploy"
+  7. Your site goes live at:
+       https://idverify.vercel.app  (or your custom domain)
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 3b: Deploy via Vercel CLI
+────────────────────────────────────────────────────────────────────────────────
+
+  cd web
+  vercel
+  # Follow prompts — set root to "web", framework to Vite
+
+  Set environment variable:
+    vercel env add VITE_API_URL production
+    → enter: https://idverify-api.onrender.com
+
+  Redeploy with env var:
+    vercel --prod
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4: Update CORS on the backend (optional hardening)
+────────────────────────────────────────────────────────────────────────────────
+
+  By default, the API allows all origins (CORS: *).
+  To restrict to only your Vercel frontend, edit api/src/index.ts:
+
+    app.use(cors({
+      origin: 'https://idverify.vercel.app',  ← your Vercel URL
+      methods: ['GET', 'POST', 'OPTIONS'],
+    }))
+
+  Then rebuild and redeploy to Render.
+
+================================================================================
+  PART 4: npm PACKAGE (OPTIONAL)
+================================================================================
+
+  The core verification logic lives in packages/idverify/ and can be published
+  to npm so other developers can use it directly.
+
+────────────────────────────────────────────────────────────────────────────────
+BUILD THE PACKAGE
+────────────────────────────────────────────────────────────────────────────────
+
+  cd packages/idverify
+  npm install
+  npm run build
+  → Compiled files appear in packages/idverify/dist/
+
+────────────────────────────────────────────────────────────────────────────────
+PUBLISH TO npm
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Create an npm account at https://npmjs.com if you don't have one
+  2. Login:
+       npm login
+  3. From packages/idverify/:
+       npm publish
+  4. Your package is now at:
+       https://www.npmjs.com/package/idverify
+
+────────────────────────────────────────────────────────────────────────────────
+USE IN ANOTHER PROJECT
+────────────────────────────────────────────────────────────────────────────────
+
+  npm install idverify
+
+  import { verifyId, checkAge } from 'idverify';
+  import { readFileSync } from 'fs';
+
+  const buffer = readFileSync('./passport.jpg');
+  const result = await verifyId(buffer);
+
+  console.log(result.status);    // "valid"
+  console.log(result.over18);    // true
+
+================================================================================
+  PART 5: ENVIRONMENT VARIABLES REFERENCE
+================================================================================
+
+  FRONTEND (web/.env.local for local dev, Vercel Dashboard for production)
+  ─────────────────────────────────────────────────────────────────────────
+  VITE_API_URL    URL of your deployed API server
+                  Local:       http://localhost:3001
+                  Production:  https://idverify-api.onrender.com
+
+  BACKEND (api/.env for local dev, Render Dashboard for production)
+  ─────────────────────────────────────────────────────────────────────────
+  PORT            Port to listen on (Render sets this automatically)
+                  Local default: 3001
+
+================================================================================
+  PART 6: TROUBLESHOOTING
+================================================================================
+
+  Problem: "Image could not be processed" on every upload
+  Fix:     Make sure the API is running. Check VITE_API_URL points to the
+           correct server.
+
+  Problem: tesseract.js fails with "language data not found"
+  Fix:     tesseract.js v5 downloads language data automatically on first run.
+           Ensure the server has internet access for the first request.
+           Subsequent requests use a local cache.
+
+  Problem: sharp install fails on Linux/Mac
+  Fix:     Run: npm install --include=optional sharp
+           Or:  npm rebuild sharp
+
+  Problem: "Too many requests" (429) during testing
+  Fix:     Rate limit is 30 requests/min per IP. Wait 60 seconds and retry.
+
+  Problem: Render API cold start is slow
+  Fix:     Free tier sleeps. Either use a paid plan, or add a health-check
+           ping every 10 minutes using a cron service like cron-job.org.
+
+  Problem: Vercel shows blank page after deploy
+  Fix:     Verify "Root Directory" is set to "web" in Vercel project settings.
+           The vercel.json already configures SPA routing rewrites.
+
+================================================================================
+  QUICK REFERENCE
+================================================================================
+
+  Local frontend:   http://localhost:5173
+  Local API:        http://localhost:3001
+  API health:       GET /api/health
+  Verify ID:        POST /api/verify        (multipart, field: image)
+  Age gate:         POST /api/age-gate      (multipart, field: image)
+
+  GitHub:  https://github.com/daddymaou/idverify
+  Author:  ᗰᗩOᑌ  →  https://maou.name.ng
+
+================================================================================

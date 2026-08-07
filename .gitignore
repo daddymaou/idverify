@@ -1,0 +1,14 @@
+﻿node_modules/
+api/node_modules/
+web/node_modules/
+packages/*/node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+.vscode/
+coverage/
+build/
+.vite/
+*.tgz
