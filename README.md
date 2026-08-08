@@ -1,8 +1,13 @@
+```markdown
 # IDVerify
 
 **Verify Any ID. Instantly.**
 
 A single-purpose ID verification web app that scans government IDs — passports, driver's licenses, and national IDs — and tells you if they're valid.
+
+**Live Demo:** [idverify-tan.vercel.app](https://idverify-tan.vercel.app)  
+**API:** [idverify-api.onrender.com](https://idverify-api.onrender.com)  
+**npm Package:** [@daddymaou/idverify](https://www.npmjs.com/package/@daddymaou/idverify)
 
 Built by [ᗰᗩOᑌ](https://maou.name.ng) · [GitHub](https://github.com/daddymaou/idverify)
 
@@ -22,10 +27,10 @@ Built by [ᗰᗩOᑌ](https://maou.name.ng) · [GitHub](https://github.com/daddy
 
 ```
 idverify/
-├── web/                    # React + Vite frontend (deploy to Vercel)
-├── api/                    # Express backend API (deploy to Render)
+├── web/                    # React + Vite frontend (deployed on Vercel)
+├── api/                    # Express backend API (deployed on Render)
 └── packages/
-    └── idverify/           # npm package (core logic)
+    └── idverify/           # npm package @daddymaou/idverify (core logic)
 ```
 
 ---
@@ -54,12 +59,13 @@ npm run dev
 # → http://localhost:3001
 ```
 
-### npm package
+### npm Package
 
 ```bash
 cd packages/idverify
 npm install
 npm run build
+npm publish --access=public
 ```
 
 ---
@@ -67,25 +73,25 @@ npm run build
 ## API Endpoints
 
 | Method | Path | Description |
-|---|---|---|
+|--------|------|-------------|
 | `POST` | `/api/verify` | Full ID verification |
 | `POST` | `/api/age-gate` | Age gate only |
 | `GET` | `/api/health` | Health check |
 
-All endpoints accept `multipart/form-data` with an `image` field. No auth required. CORS enabled for all origins.
+All endpoints accept `multipart/form-data` with an `idImage` field. No auth required. CORS enabled for all origins.
 
 ---
 
 ## npm Package
 
-The core verification logic is also published as the `idverify` npm package:
+The core verification logic is published as the `@daddymaou/idverify` npm package:
 
 ```bash
-npm install idverify
+npm install @daddymaou/idverify
 ```
 
 ```typescript
-import { verifyId, checkAge } from 'idverify';
+import { verifyId, checkAge } from '@daddymaou/idverify';
 const result = await verifyId(buffer);
 ```
 
@@ -98,9 +104,21 @@ See `packages/idverify/README.md` for full documentation.
 - **Frontend**: React 18, Vite 5, TypeScript, Tailwind CSS
 - **Backend**: Express 4, TypeScript, multer, tesseract.js, mrz, sharp, exifr
 - **Design**: Brutalist black-and-white, Inter + JetBrains Mono fonts, zero border-radius
+- **Deployment**: Vercel (web) + Render (API)
+
+---
+
+## Live Deployments
+
+| Service | URL | Status |
+|---------|-----|--------|
+| **Web App** | [idverify-tan.vercel.app](https://idverify-tan.vercel.app) | ✅ Live |
+| **API** | [idverify-api.onrender.com](https://idverify-api.onrender.com) | ✅ Live |
+| **npm Package** | [@daddymaou/idverify](https://www.npmjs.com/package/@daddymaou/idverify) | ✅ Published |
 
 ---
 
 ## License
 
 MIT
+```
