@@ -6,7 +6,7 @@
 
 A single-purpose ID verification web app that scans government IDs — passports, driver's licenses, and national IDs — and tells you if they're valid.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-black?style=flat-square)](https://idverify-tan.vercel.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-black?style=flat-square)](https://idverify-app.vercel.app)
 [![API](https://img.shields.io/badge/api-live-black?style=flat-square)](https://idverify-api.onrender.com)
 [![npm](https://img.shields.io/npm/v/%40daddymaou%2Fidverify?style=flat-square&color=black)](https://www.npmjs.com/package/@daddymaou/idverify)
 [![PyPI](https://img.shields.io/pypi/v/idverify?style=flat-square&color=black)](https://pypi.org/project/idverify)
@@ -160,7 +160,7 @@ Full docs: [`packages/idverify-py/README.md`](packages/idverify-py/README.md)
 
 | Service         | URL                                                                | Status    |
 |------------------|---------------------------------------------------------------------|-----------|
-| Web App          | [idverify-tan.vercel.app](https://idverify-tan.vercel.app)          | ✅ Live   |
+| Web App          | [idverify-app.vercel.app](https://idverify-app.vercel.app)          | ✅ Live   |
 | API              | [idverify-api.onrender.com](https://idverify-api.onrender.com)      | ✅ Live   |
 | npm Package      | [@daddymaou/idverify](https://www.npmjs.com/package/@daddymaou/idverify) | ✅ Published |
 | Python Package   | [idverify](https://pypi.org/project/idverify)                       | ✅ Published |
