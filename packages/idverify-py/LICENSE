@@ -1,0 +1,24 @@
+[project]
+name = "idverify"
+version = "0.1.0"
+description = "ID verification library — OCR, MRZ parsing, screenshot detection, and age gate"
+authors = [{ name = "Maou", email = "daddymaouu@email.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+    "opencv-python>=4.8.0",
+    "mrz>=0.2.0",
+    "exifread>=3.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/daddymaou/idverify"
+Repository = "https://github.com/daddymaou/idverify"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
