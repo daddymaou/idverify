@@ -68,6 +68,7 @@ export default function Docs() {
             { href: '#rate-limits', label: 'Rate Limits' },
             { href: '#errors', label: 'Errors' },
             { href: '#npm', label: 'npm Package' },
+            { href: '#python', label: 'Python Package' },
           ].map(item => (
             <a
               key={item.href}
@@ -254,6 +255,28 @@ const age = await checkAge(buffer);
 console.log(age.over18); // true
 console.log(age.over21); // false`} />
           </Section>
+
+          <Section id="python" title="Python Package">
+            <p className="text-sm mb-4">
+              Use the core logic directly in your Python project without hitting the API.
+            </p>
+            <CodeBlock code={`pip install idverify`} />
+            <h3 className="text-xs font-mono font-bold tracking-widest uppercase mt-6 mb-3">Usage</h3>
+            <CodeBlock code={`from idverify import verify_id, check_age
+
+with open('./passport.jpg', 'rb') as f:
+    buffer = f.read()
+
+# Full verification
+result = verify_id(buffer)
+print(result.status)   # "valid"
+print(result.checksum) # "passed"
+
+# Age gate only
+age = check_age(buffer)
+print(age.over18)  # True
+print(age.over21)  # False`} />
+          </Section>
         </main>
       </div>
 
@@ -267,6 +290,7 @@ console.log(age.over21); // false`} />
         <div className="flex gap-6 text-xs font-mono">
           <a href="https://github.com/daddymaou/idverify" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub</a>
           <a href="https://www.npmjs.com/package/@daddymaou/idverify" target="_blank" rel="noopener noreferrer" className="hover:underline">npm</a>
+          <a href="https://pypi.org/project/idverify" target="_blank" rel="noopener noreferrer" className="hover:underline">PyPI</a>
         </div>
       </footer>
     </div>

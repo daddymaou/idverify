@@ -1,15 +1,24 @@
 {
   "name": "@daddymaou/idverify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ID verification library — OCR, MRZ parsing, screenshot detection, and age gate for government IDs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
-  "keywords": ["id-verification", "mrz", "passport", "ocr", "tesseract", "identity"],
+  "keywords": [
+    "id-verification",
+    "mrz",
+    "passport",
+    "ocr",
+    "tesseract",
+    "identity"
+  ],
   "author": "ᗰᗩOᑌ <https://maou.name.ng>",
   "license": "MIT",
   "repository": {

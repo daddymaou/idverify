@@ -7,13 +7,13 @@ Built by [ᗰᗩOᑌ](https://maou.name.ng) · [GitHub](https://github.com/daddy
 ## Install
 
 ```bash
-npm install idverify
+npm install @daddymaou/idverify
 ```
 
 ## Usage
 
 ```typescript
-import { verifyId, checkAge } from 'idverify';
+import { verifyId, checkAge } from '@daddymaou/idverify';
 import { readFileSync } from 'fs';
 
 const buffer = readFileSync('./passport.jpg');

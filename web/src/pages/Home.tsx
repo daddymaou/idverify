@@ -104,7 +104,7 @@ export default function Home() {
             },
             {
               title: 'Open Source',
-              body: 'Verify the code yourself. Core logic available as an npm package.',
+              body: 'Verify the code yourself. Core logic available as npm and Python packages.',
             },
           ].map((card, i) => (
             <div
@@ -149,6 +149,14 @@ export default function Home() {
             className="hover:underline"
           >
             npm
+          </a>
+          <a
+            href="https://pypi.org/project/idverify"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            PyPI
           </a>
           <Link to="/docs" className="hover:underline">
             API Docs
