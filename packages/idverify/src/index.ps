@@ -1,0 +1,395 @@
+// idverify — PlainScript source of the @daddymaou/idverify npm package.
+//
+// Public API (auto-exported as CommonJS by `plainscript build`):
+//   make verifyId(buffer)   -> VerificationResult record
+//   make checkAge(buffer)   -> { over18, over21 } record
+//
+// PlainScript's native `ocr "<path>" as text` statement only accepts a file
+// path and returns bare text (no confidence, no preprocessing hook). This
+// library's public API instead takes an in-memory Buffer and returns both the
+// extracted text and a confidence score, so OCR is driven through the
+// JavaScript Gateway for exact fidelity. Everything else that the grammar can
+// express (document type detection, MRZ type mapping, age clamping, status
+// logic, result construction) is written in native PlainScript.
+
+use sharp
+use mrz
+use exifr
+use tesseract.js
+
+// ── Preprocess + OCR ─────────────────────────────────────────────────────────
+// sharp resizes/grayscales/normalizes/sharpeners the buffer, then tesseract
+// extracts text. Returns a { text, confidence } record.
+
+make runOCR(buffer)
+    remember res as javascript
+        const sharp = require('sharp')
+        const { createWorker } = require('tesseract.js')
+        const processed = await sharp(buffer)
+            .resize({ width: 1200, withoutEnlargement: true })
+            .grayscale()
+            .normalize()
+            .sharpen({ sigma: 1.5 })
+            .toFormat('png')
+            .toBuffer()
+        const worker = await createWorker('eng')
+        try {
+            const { data } = await worker.recognize(processed)
+            return { text: data.text, confidence: Math.round(data.confidence) }
+        } finally {
+            await worker.terminate()
+        }
+    done
+    give res
+done
+
+// ── Screenshot detection via EXIF ────────────────────────────────────────────
+// Uses exifr to check for camera EXIF (Make + Model). Missing or unreadable
+// metadata is treated as a screenshot.
+
+make isScreenshot(buffer)
+    remember res as javascript
+        const exifr = require('exifr')
+        try {
+            const exif = await exifr.parse(buffer, { tiff: true, exif: true, mergeOutput: true })
+            if (!exif) return true
+            const hasMake = !!(exif.Make || exif.make)
+            const hasModel = !!(exif.Model || exif.model)
+            return !(hasMake && hasModel)
+        } catch (e) {
+            return true
+        }
+    done
+    give res
+done
+
+// ── MRZ line detection ───────────────────────────────────────────────────────
+// Cleans each OCR line to [A-Z0-9<] and collects Machine Readable Zone
+// candidates by expected line length (TD1=30, TD2=36, TD3=44).
+
+make extractMRZLines(text)
+    remember res as javascript
+        const lines = text
+            .split('\n')
+            .map(l => l.replace(/\s+/g, '').replace(/[^A-Z0-9<]/gi, '').toUpperCase())
+            .filter(l => l.length >= 30)
+        const td3 = lines.filter(l => /^[A-Z0-9<]{44}$/.test(l))
+        if (td3.length >= 2) return td3.slice(0, 2)
+        const td1 = lines.filter(l => /^[A-Z0-9<]{30}$/.test(l))
+        if (td1.length >= 3) return td1.slice(0, 3)
+        const td2 = lines.filter(l => /^[A-Z0-9<]{36}$/.test(l))
+        if (td2.length >= 2) return td2.slice(0, 2)
+        return null
+    done
+    give res
+done
+
+// ── Date helpers ─────────────────────────────────────────────────────────────
+// Converts a 6-digit YYMMDD MRZ date to YYYY-MM-DD (2000-2030 pivot).
+// (Named formatMRZDate — "formatDate" is a PlainScript builtin.)
+
+make formatMRZDate(yymmdd)
+    if yymmdd is null
+        give null
+    done
+    if length(yymmdd) is not 6
+        give null
+    done
+    remember mm as yymmdd.slice(2, 4)
+    remember dd as yymmdd.slice(4, 6)
+    remember yy as parseInt(yymmdd.slice(0, 2))
+    remember year as 2000 + yy
+    if yy is greater than 30
+        year becomes 1900 + yy
+    done
+    give `${year}-${mm}-${dd}`
+done
+
+// Normalizes a human-readable date (DD/MM/YY or YYYY-MM-DD, any separator).
+
+make normalizeDate(dateStr)
+    remember res as javascript
+        const x = String(dateStr).split(/[\/\-\.]/)
+        if (x.length !== 3) return String(dateStr)
+        let [a, b, c] = x
+        if (!a || !b || !c) return String(dateStr)
+        if (c.length === 4) return c + '-' + a.padStart(2, '0') + '-' + b.padStart(2, '0')
+        if (a.length === 4) return a + '-' + b.padStart(2, '0') + '-' + c.padStart(2, '0')
+        const yy = parseInt(c)
+        const year = yy <= 30 ? 2000 + yy : 1900 + yy
+        return year + '-' + a.padStart(2, '0') + '-' + b.padStart(2, '0')
+    done
+    give res
+done
+
+// Pulls an expiry date string (raw, not yet normalized) or null from OCR text.
+
+make extractExpiryFromText(text)
+    remember res as javascript
+        const m = text.match(/(?:exp(?:iry|iration|ires)?|valid\s*(?:thru|through|until))[\s:]*([0-9]{1,2}[\/\-\.][0-9]{1,2}[\/\-\.][0-9]{2,4})/i)
+        if (m) return m[1]
+        const iso = text.match(/\b(20\d{2})[\/\-\.](0[1-9]|1[0-2])[\/\-\.](0[1-9]|[12]\d|3[01])\b/)
+        if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3]
+        return null
+    done
+    give res
+done
+
+// Pulls a date-of-birth string (raw, not yet normalized) or null from OCR text.
+
+make extractDOBFromText(text)
+    remember res as javascript
+        const m = text.match(/(?:d\.?o\.?b\.?|date\s*of\s*birth|born|dob)[\s:]*([0-9]{1,2}[\/\-\.][0-9]{1,2}[\/\-\.][0-9]{2,4})/i)
+        if (m) return m[1]
+        return null
+    done
+    give res
+done
+
+// ── Document classification ──────────────────────────────────────────────────
+
+make detectDocumentType(text)
+    remember u as uppercase(text)
+    if u contains "PASSPORT"
+        give "passport"
+    done
+    if u contains "DRIVER"
+        give "drivers_license"
+    done
+    if u contains "LICENSE"
+        give "drivers_license"
+    done
+    if u contains "LICENCE"
+        give "drivers_license"
+    done
+    if u contains "PERMIT"
+        give "drivers_license"
+    done
+    if u contains "NATIONAL ID"
+        give "national_id"
+    done
+    if u contains "IDENTITY CARD"
+        give "national_id"
+    done
+    if u contains "ID CARD"
+        give "national_id"
+    done
+    give "unknown"
+done
+
+// Maps an MRZ type code to a document type.
+
+make typeFromCode(code)
+    if code is "P"
+        give "passport"
+    done
+    if code is "D"
+        give "drivers_license"
+    done
+    if code is "I"
+        give "national_id"
+    done
+    if code is "A"
+        give "national_id"
+    done
+    if code is "C"
+        give "national_id"
+    done
+    give "unknown"
+done
+
+// ── Age gate ─────────────────────────────────────────────────────────────────
+
+make calculateAge(dobStr)
+    remember res as javascript
+        const dob = new Date(dobStr)
+        if (isNaN(dob.getTime())) return null
+        const now = new Date()
+        let age = now.getFullYear() - dob.getFullYear()
+        const m = now.getMonth() - dob.getMonth()
+        if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
+        if (age < 0 || age > 130) return null
+        return { over18: age >= 18, over21: age >= 21 }
+    done
+    give res
+done
+
+// True when an ISO date (YYYY-MM-DD) is earlier than today.
+
+make isPast(isoDate)
+    remember res as javascript
+        return new Date(isoDate) < new Date()
+    done
+    give res
+done
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
+// Verify a government ID image buffer. Returns a VerificationResult record.
+
+make verifyId(buffer)
+    remember ocrResult as wait for runOCR(buffer)
+    remember text as text of ocrResult
+    remember ocrConf as confidence of ocrResult
+    remember screenshot as wait for isScreenshot(buffer)
+
+    remember documentType as "unknown"
+    remember issuingCountry as "UNKNOWN"
+    remember expiryDate as null
+    remember birthDate as null
+    remember checksum as "not_applicable"
+    remember confidence as ocrConf
+    remember mrzValid as false
+
+    remember mrzLines as wait for extractMRZLines(text)
+    if mrzLines is not null and length(mrzLines) is at least 2
+        try
+            remember parsed as mrz.parse(mrzLines)
+            mrzValid becomes valid of parsed
+            remember fields as fields of parsed
+            documentType becomes typeFromCode(mrzLines[0][0])
+
+            remember state as issuingState of fields
+            remember nat as nationality of fields
+            if state is not null and length(state) is greater than 0
+                issuingCountry becomes uppercase(state)
+            otherwise
+                if nat is not null and length(nat) is greater than 0
+                    issuingCountry becomes uppercase(nat)
+                otherwise
+                    issuingCountry becomes "UNKNOWN"
+                done
+            done
+
+            remember rawExpiry as expirationDate of fields
+            if rawExpiry is not null
+                expiryDate becomes formatMRZDate(rawExpiry)
+            done
+            remember rawBirth as birthDate of fields
+            if rawBirth is not null
+                birthDate becomes formatMRZDate(rawBirth)
+            done
+
+            if mrzValid is true
+                checksum becomes "passed"
+            otherwise
+                checksum becomes "failed"
+            done
+
+            if mrzValid is true
+                confidence becomes round(ocrConf * 0.6 + 40)
+                if confidence is greater than 95
+                    confidence becomes 95
+                done
+            otherwise
+                confidence becomes round(ocrConf * 0.5 + 20)
+                if confidence is greater than 70
+                    confidence becomes 70
+                done
+            done
+        recover as err
+            checksum becomes "failed"
+        done
+    otherwise
+        documentType becomes detectDocumentType(text)
+        remember rawExpiry as wait for extractExpiryFromText(text)
+        if rawExpiry is not null
+            expiryDate becomes wait for normalizeDate(rawExpiry)
+        done
+        remember rawBirth as wait for extractDOBFromText(text)
+        if rawBirth is not null
+            birthDate becomes wait for normalizeDate(rawBirth)
+        done
+        confidence becomes round(ocrConf * 0.5 + 10)
+        if confidence is greater than 60
+            confidence becomes 60
+        done
+    done
+
+    remember status as "invalid"
+    remember past as false
+    if expiryDate is not null
+        past becomes wait for isPast(expiryDate)
+    done
+    if past is true
+        status becomes "expired"
+    otherwise
+        if mrzValid is true
+            status becomes "valid"
+        otherwise
+            if documentType is not "unknown"
+                status becomes "valid"
+            done
+        done
+    done
+
+    remember ageResult as null
+    if birthDate is not null
+        ageResult becomes wait for calculateAge(birthDate)
+    done
+
+    remember over18 as null
+    if ageResult is not null
+        over18 becomes over18 of ageResult
+    done
+    remember over21 as null
+    if ageResult is not null
+        over21 becomes over21 of ageResult
+    done
+
+    remember result as
+        id is uuid()
+        documentType is documentType
+        issuingCountry is issuingCountry
+        expiryDate is expiryDate
+        status is status
+        checksum is checksum
+        screenshotDetected is screenshot
+        confidence is confidence
+        over18 is over18
+        over21 is over21
+    done
+    give result
+done
+
+// Check the age gate from a government ID image buffer without exposing the
+// full birthdate. Returns { over18, over21 }.
+
+make checkAge(buffer)
+    remember ocrResult as wait for runOCR(buffer)
+    remember text as text of ocrResult
+    remember birthDate as null
+
+    remember mrzLines as wait for extractMRZLines(text)
+    if mrzLines is not null and length(mrzLines) is at least 2
+        try
+            remember parsed as mrz.parse(mrzLines)
+            remember fields as fields of parsed
+            remember rawBirth as birthDate of fields
+            if rawBirth is not null
+                birthDate becomes formatMRZDate(rawBirth)
+            done
+        recover as err
+        done
+    done
+
+    if birthDate is null
+        remember rawDob as wait for extractDOBFromText(text)
+        if rawDob is not null
+            birthDate becomes wait for normalizeDate(rawDob)
+        done
+    done
+
+    if birthDate is null
+        throw "Date of birth could not be detected from this image."
+    done
+
+    remember result as wait for calculateAge(birthDate)
+    if result is null
+        throw "Could not calculate age from detected date."
+    done
+    give result
+done
+
+export verifyId
+export checkAge

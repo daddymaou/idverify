@@ -12,9 +12,9 @@ npm install @daddymaou/idverify
 
 ## Usage
 
-```typescript
-import { verifyId, checkAge } from '@daddymaou/idverify';
-import { readFileSync } from 'fs';
+```js
+const { verifyId, checkAge } = require('@daddymaou/idverify');
+const { readFileSync } = require('fs');
 
 const buffer = readFileSync('./passport.jpg');
 
@@ -30,6 +30,11 @@ const age = await checkAge(buffer);
 console.log(age.over18); // true
 console.log(age.over21); // false
 ```
+
+> The package is written in [PlainScript](https://ayoistooslick.github.io/plainscript) and
+> ships the compiled CommonJS `dist/index.js`. Because PlainScript does not emit
+> TypeScript declaration files, no `.d.ts` is published — TypeScript consumers can
+> declare the `VerificationResult` / `AgeGateResult` shapes themselves.
 
 ## API
 
@@ -63,9 +68,21 @@ Returns `{ over18: boolean, over21: boolean }` without exposing the full birthda
 5. **Screenshot detection** — exifr checks for camera EXIF metadata (Make, Model)
 6. **Age gate** — calculates age from DOB without returning the raw date
 
+## Building from source
+
+The source lives in `src/index.ps` and is compiled by the PlainScript compiler:
+
+```bash
+npm install
+npm run build        # plainscript build  → src/index.ps → dist/index.js
+```
+
+`npm publish` runs the same build automatically via the `prepare` script.
+
 ## Requirements
 
 - Node.js 18+
+- Next.js not required — this is a plain Node/CommonJS module
 - The `sharp` package requires a native build — `npm install` handles this automatically
 
 ## License

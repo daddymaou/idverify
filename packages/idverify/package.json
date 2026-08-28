@@ -3,13 +3,13 @@
   "version": "1.0.1",
   "description": "ID verification library — OCR, MRZ parsing, screenshot detection, and age gate for government IDs",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "plainscript build",
+    "prepare": "plainscript build",
+    "dev": "plainscript build"
   },
   "keywords": [
     "id-verification",
@@ -32,8 +32,7 @@
     "tesseract.js": "^5.0.4"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "@types/node": "^20.11.0"
+    "plainscript-lang": "^1.0.1"
   },
   "engines": {
     "node": ">=18"
